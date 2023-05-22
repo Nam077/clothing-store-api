@@ -1,4 +1,4 @@
-import { HttpException, Injectable, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,7 +7,6 @@ import { EntityManager, Repository } from 'typeorm';
 import { FilterCustomDto } from './dto/filter-custom.dto';
 import { BcryptProvider } from '../../providers/bycrypt/bcrypt-provider.service';
 import { LoginDto } from '../auth/dto/login.dto';
-import { RoleService } from '../role/role.service';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @Injectable()
@@ -24,12 +23,13 @@ export class UserService {
     }
 
     async create(createUserDto: CreateUserDto): Promise<User> {
-        const existingUser: User = await this.findOneByEmail(createUserDto.email);
+        const { email, password } = createUserDto;
+        const existingUser: User = await this.findOneByEmail(email);
         if (existingUser) {
             throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
         }
-        createUserDto.password = await this.bcryptProvider.hash(createUserDto.password);
-        const user = this.userRepository.create(createUserDto);
+        createUserDto.password = await this.bcryptProvider.hash(password);
+        const user: User = this.userRepository.create(createUserDto);
         try {
             return this.entityManager.transaction(async (manager) => {
                 return await manager.save(user);
@@ -59,12 +59,12 @@ export class UserService {
     }
 
     async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-        const existingUser = await this.userRepository.findOne({ where: { id } });
+        const existingUser: User = await this.findOne(id);
         if (!existingUser) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
-        if (existingUser.email !== updateUserDto.email) {
-            const existingUserByEmail = await this.findOneByEmail(updateUserDto.email);
+        if (updateUserDto.email && existingUser.email !== updateUserDto.email) {
+            const existingUserByEmail: User = await this.findOneByEmail(updateUserDto.email);
             if (existingUserByEmail) {
                 throw new HttpException('Email already exists', HttpStatus.BAD_REQUEST);
             }
@@ -74,7 +74,8 @@ export class UserService {
         }
         try {
             return this.entityManager.transaction(async (manager) => {
-                return await manager.save(this.userRepository.create(updateUserDto));
+                Object.assign(existingUser, updateUserDto);
+                return await manager.save(existingUser);
             });
         } catch (error) {
             throw new HttpException('Something went wrong', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -82,7 +83,7 @@ export class UserService {
     }
 
     async remove(id: number): Promise<User> {
-        const existingUser = await this.userRepository.findOne({ where: { id } });
+        const existingUser: User = await this.userRepository.findOne({ where: { id } });
         if (!existingUser) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
@@ -94,8 +95,9 @@ export class UserService {
             throw new HttpException('Something went wrong', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async login(loginDto: LoginDto): Promise<User | null> {
-        const user = await this.findOneByEmail(loginDto.email);
+
+    async login(loginDto: LoginDto): Promise<User> {
+        const user: User = await this.findOneByEmail(loginDto.email);
         if (!user) {
             return null;
         }
@@ -105,7 +107,10 @@ export class UserService {
     }
 
     async getAllPermissions(id: number): Promise<string[]> {
-        const user = await this.userRepository.findOne({ where: { id }, relations: { roles: { permissions: true } } });
+        const user: User = await this.userRepository.findOne({
+            where: { id },
+            relations: { roles: { permissions: true } },
+        });
         const permissions: Set<string> = new Set();
         user.roles.forEach((role) => {
             role.permissions.forEach((permission) => {
@@ -115,9 +120,10 @@ export class UserService {
         return Array.from(permissions);
     }
 
-    async validateUser(payload: JwtPayload): Promise<any | null> {
-        const user = await this.userRepository.findOne({
-            where: { email: payload.email },
+    async validateUser(payload: JwtPayload): Promise<User & { permissions: string[] }> {
+        const { email } = payload;
+        const user: User = await this.userRepository.findOne({
+            where: { email },
             relations: { roles: { permissions: true } },
         });
         if (user) {

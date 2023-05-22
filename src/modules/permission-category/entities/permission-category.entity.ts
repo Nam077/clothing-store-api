@@ -42,8 +42,11 @@ export class PermissionCategory {
         name: 'description',
         type: 'varchar',
         length: 255,
+        default: `Description of the permission category`,
         comment: 'Description of the permission category',
     })
+    description: string;
+
     @CreateDateColumn({
         name: 'created_at',
         type: 'timestamp',

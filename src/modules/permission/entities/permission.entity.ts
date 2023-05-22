@@ -46,6 +46,8 @@ export class Permission {
         comment: 'Value of the permission',
         default: '',
     })
+    value: string;
+
     @CreateDateColumn({
         name: 'created_at',
         type: 'timestamp',
@@ -71,7 +73,6 @@ export class Permission {
         },
     })
     roles: Role[];
-
     @ManyToOne(() => PermissionCategory, (permissionCategory) => permissionCategory.permissions)
     permissionCategory: PermissionCategory;
 }
