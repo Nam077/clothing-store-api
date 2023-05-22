@@ -1,6 +1,16 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from '../../user/entities/user.entity';
+import {
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinTable,
+    ManyToMany,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
+} from 'typeorm';
 import { Role } from '../../role/entities/role.entity';
+import { PermissionCategory } from '../../permission-category/entities/permission-category.entity';
+
 @Entity({
     name: 'permissions',
 })
@@ -29,9 +39,28 @@ export class Permission {
     })
     description: string;
 
+    @Column({
+        name: 'value',
+        type: 'varchar',
+        length: 255,
+        comment: 'Value of the permission',
+        default: '',
+    })
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt: Date;
+
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt: Date;
+
     @ManyToMany(() => Role, (role) => role.permissions)
     @JoinTable({
-        name: 'role_permission',
+        name: 'role_permissions',
         joinColumn: {
             name: 'role_id',
             referencedColumnName: 'id',
@@ -42,4 +71,7 @@ export class Permission {
         },
     })
     roles: Role[];
+
+    @ManyToOne(() => PermissionCategory, (permissionCategory) => permissionCategory.permissions)
+    permissionCategory: PermissionCategory;
 }

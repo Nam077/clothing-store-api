@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Permission } from '../../permission/entities/permission.entity';
 
@@ -21,6 +21,26 @@ export class Role {
         comment: 'Name of the role',
     })
     name: string;
+
+    @Column({
+        name: 'description',
+        type: 'varchar',
+        length: 255,
+        comment: 'Description of the role',
+    })
+    description: string;
+
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt: Date;
+
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt: Date;
 
     @ManyToMany(() => User, (user) => user.roles)
     users: User[];

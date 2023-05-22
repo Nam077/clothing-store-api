@@ -8,9 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { BcryptProvider } from './providers/bycrypt/bcrypt-provider.service';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './modules/auth/guards/jwt.guard';
 import { PassportModule } from '@nestjs/passport';
+import { PermissionCategoryModule } from './modules/permission-category/permission-category.module';
 
 @Module({
     imports: [
@@ -21,6 +20,7 @@ import { PassportModule } from '@nestjs/passport';
         PermissionModule,
         AuthModule,
         DatabaseModule,
+        PermissionCategoryModule,
     ],
     controllers: [AppController],
     providers: [AppService, BcryptProvider],
